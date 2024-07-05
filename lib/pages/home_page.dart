@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:local_auth/local_auth.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -9,6 +10,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  final LocalAuthentication _auth = LocalAuthentication();
+
   bool _isAuthenticated = false;
   @override
   Widget build(BuildContext context) {
@@ -20,10 +23,30 @@ class _HomePageState extends State<HomePage> {
 
   Widget _authButton() {
     return FloatingActionButton(
-      onPressed: () {
-        setState(() {
-          _isAuthenticated = !_isAuthenticated;
-        });
+      onPressed: () async {
+        if (!_isAuthenticated) {
+          final bool canAuthenticateWithBiometrics =
+              await _auth.canCheckBiometrics;
+          if (canAuthenticateWithBiometrics) {
+            try {
+              final bool didAuthenticate = await _auth.authenticate(
+                  localizedReason: 'Please Authenticate to continue!',
+                  options: const AuthenticationOptions(
+                    biometricOnly: false,
+                  ));
+              setState(() {
+                _isAuthenticated = didAuthenticate;
+              });
+            } catch (e) {
+              print(e);
+            }
+            // print(canAuthenticateWithBiometrics);
+          } else {
+            setState(() {
+              _isAuthenticated = false;
+            });
+          }
+        }
       },
       child: Icon(
         _isAuthenticated ? Icons.lock : Icons.lock_open,
